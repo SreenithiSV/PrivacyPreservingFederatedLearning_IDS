@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>IDS Dashboard</title>
+
+    <style>
+        body {
+            font-family: Arial;
+            background: #0f172a;
+            color: #e2e8f0;
+            text-align: center;
+        }
+
+        h1 {
+            color: #38bdf8;
+        }
+
+        .container {
+            margin-top: 40px;
+        }
+
+        select, button {
+            padding: 10px;
+            font-size: 16px;
+            margin: 10px;
+            border-radius: 8px;
+            border: none;
+        }
+
+        button {
+            background: #22c55e;
+            color: white;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #16a34a;
+        }
+
+        .card {
+            margin: 20px auto;
+            padding: 20px;
+            width: 80%;
+            background: #1e293b;
+            border-radius: 12px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+
+        .benign {
+            color: #22c55e;
+            font-weight: bold;
+        }
+
+        .attack {
+            color: #ef4444;
+            font-weight: bold;
+        }
+
+        .scroll-container {
+            overflow-x: auto;
+            margin-top: 15px;
+        }
+
+        table {
+            border-collapse: collapse;
+            min-width: 1200px;
+        }
+
+        td, th {
+            border: 1px solid #334155;
+            padding: 8px;
+            white-space: nowrap;
+        }
+
+        th {
+            background: #334155;
+        }
+
+        .info {
+            color: #94a3b8;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+<h1> Intrusion Detection System Dashboard</h1>
+
+<div class="container">
+
+    <select id="sample"></select>
+
+    <button onclick="predict()">Run Detection</button>
+
+    <div class="card" id="resultCard" style="display:none;">
+
+        <h2>Prediction Result</h2>
+
+        <p class="info" id="info"></p>
+
+        <p><b>Actual:</b> <span id="actual"></span></p>
+        <p><b>Predicted:</b> <span id="predicted"></span></p>
+        <p><b>Status:</b> <span id="status"></span></p>
+
+        <div id="alertBox"></div>
+
+        <h3>Feature Overview</h3>
+
+        <div class="scroll-container">
+            <table id="featureTable"></table>
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+
+// ✅ Load dropdown dynamically with labels
+fetch("/labels")
+.then(res => res.json())
+.then(labels => {
+    let dropdown = document.getElementById("sample");
+    dropdown.innerHTML = "";
+
+    labels.forEach((label, i) => {
+        dropdown.innerHTML += `<option value="${i}">
+            Sample ${i+1} - ${label}
+        </option>`;
+    });
+});
+
+function predict() {
+
+    let idx = document.getElementById("sample").value;
+
+    fetch(`/predict/${idx}`)
+    .then(res => res.json())
+    .then(data => {
+
+        document.getElementById("resultCard").style.display = "block";
+
+        // ✅ Sample info
+        document.getElementById("info").innerText = data.info;
+
+        // ✅ Actual & Predicted with colors
+        let actualClass = data.actual === "BENIGN" ? "benign" : "attack";
+        let predictedClass = data.predicted === "BENIGN" ? "benign" : "attack";
+
+        document.getElementById("actual").innerHTML =
+            `<span class="${actualClass}">${data.actual}</span>`;
+
+        document.getElementById("predicted").innerHTML =
+            `<span class="${predictedClass}">${data.predicted}</span>`;
+
+        // ✅ Status
+        let statusText = data.actual === data.predicted
+            ? "✅ Model Prediction Correct"
+            : "❌ Misclassification";
+
+        document.getElementById("status").innerText = statusText;
+
+        // 🚨 Attack alert
+        let alertHTML = "";
+        if (data.predicted !== "BENIGN") {
+            alertHTML = "<p style='color:red;font-size:18px;'>🚨 ATTACK DETECTED</p>";
+        }
+        document.getElementById("alertBox").innerHTML = alertHTML;
+
+        // ✅ Horizontal Feature Table
+        let table = document.getElementById("featureTable");
+
+        let headerRow = "<tr>";
+        data.feature_names.slice(0, 20).forEach(name => {
+            headerRow += `<th>${name}</th>`;
+        });
+        headerRow += "</tr>";
+
+        let valueRow = "<tr>";
+        data.features.slice(0, 20).forEach(val => {
+            valueRow += `<td>${val.toFixed(2)}</td>`;
+        });
+        valueRow += "</tr>";
+
+        table.innerHTML = headerRow + valueRow;
+
+    });
+}
+</script>
+
+</body>
+</html>

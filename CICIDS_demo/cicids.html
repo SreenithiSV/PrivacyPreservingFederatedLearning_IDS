@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>IDS Demo</title>
+</head>
+<body>
+
+<h2>Intrusion Detection System</h2>
+
+<select id="sample">
+    <option value="0">Random Sample 1</option>
+    <option value="1">Random Sample 2</option>
+    <option value="2">Random Sample 3</option>
+    <option value="3">Random Sample 4</option>
+    <option value="4">Random Sample 5</option>
+</select>
+
+<button onclick="predict()">Predict</button>
+
+<h3 id="result"></h3>
+
+<script>
+function predict() {
+    let idx = document.getElementById("sample").value;
+
+    fetch(`/predict/${idx}`)
+    .then(res => res.json())
+    .then(data => {
+        document.getElementById("result").innerHTML =
+            "<b>Actual:</b> " + data.actual + "<br>" +
+            "<b>Predicted:</b> " + data.predicted + "<br>" +
+            "<b>Status:</b> " + (data.actual === data.predicted ? "✅ Correct" : "❌ Wrong");
+    });
+}
+</script>
+
+</body>
+</html>
